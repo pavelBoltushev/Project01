@@ -1,12 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshRenderer))]
 public class Cell : MonoBehaviour
 {
-    private MeshRenderer _renderer;
-    private CellGrid _grid;
+    private MeshRenderer _renderer;    
 
     public int X { get; private set; }
     public int Z { get; private set; }
@@ -17,20 +14,19 @@ public class Cell : MonoBehaviour
         _renderer = GetComponent<MeshRenderer>();
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider other)
     {
-        if (collision.gameObject.TryGetComponent(out Player player))
+        if (other.gameObject.TryGetComponent(out Player player))
         {
             player.OnTouched(this);
-        }        
-    }
+        }
+    }    
 
-    public void Init(int x, int z, CellGrid grid)
+    public void Init(int x, int z)
     {
         X = x;
         Z = z;
-        State = CellState.Free;
-        _grid = grid;
+        State = CellState.Free;        
     }    
 
     public void SetState(CellState state)

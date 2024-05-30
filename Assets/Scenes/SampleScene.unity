@@ -157,6 +157,7 @@ MonoBehaviour:
   _gridWidth: 31
   _gapWigth: 0.05
   _cellTemplate: {fileID: 4083271644535155796, guid: d4b1ac242cf43e540bad44805b513327, type: 3}
+  _egdeCellTemplate: {fileID: 1893821765981348747, guid: 0e868965d401d1c4badcc87773775e7d, type: 3}
 --- !u!4 &247807887
 Transform:
   m_ObjectHideFlags: 0
@@ -352,7 +353,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: 0.54463905, y: 0, z: 0, w: 0.8386706}
-  m_LocalPosition: {x: 4, y: 10.02, z: -0.22}
+  m_LocalPosition: {x: 0.1, y: 8.78, z: -3.01}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -368,6 +369,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1285109964}
   - component: {fileID: 1285109963}
+  - component: {fileID: 1285109966}
   - component: {fileID: 1285109962}
   - component: {fileID: 1285109961}
   - component: {fileID: 1285109960}
@@ -421,14 +423,14 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
+  m_Radius: 0.001
+  m_Height: 2.26
   m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: -0.041030884, z: 0}
 --- !u!23 &1285109961
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -493,7 +495,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _speed: 3
   _grid: {fileID: 247807886}
-  _initialTerritoryRadius: 5
+  _initialTerritoryRadius: 1
 --- !u!4 &1285109964
 Transform:
   m_ObjectHideFlags: 0
@@ -536,6 +538,19 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &1285109966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1285109958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 962f1c4ea9659164286ef6947ec52ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _grid: {fileID: 247807886}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
