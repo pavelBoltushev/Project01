@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,9 +9,11 @@ public class CellGrid : MonoBehaviour
     [SerializeField] private int _gridWidth;
     [SerializeField] private float _gapWigth;
     [SerializeField] private Cell _cellTemplate;
-    [SerializeField] private Cell _egdeCellTemplate;
+    //[SerializeField] private float _appropriationSpeed;
 
-    private Cell[,] _cells;    
+    private Cell[,] _cells;
+
+    public float CellSize => _cellSize;
 
     private void Start()
     {
@@ -33,14 +36,10 @@ public class CellGrid : MonoBehaviour
             for (int z = 0; z < _gridWidth; z++)
             {
                 Cell template = _cellTemplate;
-                Vector3 position = new Vector3(startPosition.x + x * _cellSize, startPosition.y, startPosition.z + z * _cellSize);
-
-                if (x == 0 || x == _gridLength - 1 || z == 0 || z == _gridWidth - 1)
-                    template = _egdeCellTemplate;
-
+                Vector3 position = new Vector3(startPosition.x + x * _cellSize, startPosition.y, startPosition.z + z * _cellSize);              
                 Cell cell = Instantiate<Cell>(template, position, Quaternion.identity);
                 _cells[x, z] = cell;
-                cell.Init(x, z);
+                cell.Init(x, z, this);
                 cell.transform.localScale = new Vector3(cell.transform.localScale.x * _cellSize - _gapWigth, cell.transform.localScale.y, cell.transform.localScale.z * _cellSize - _gapWigth);
                 
                 if (x == 0 || x == _gridLength - 1 || z == 0 || z == _gridWidth - 1)
@@ -74,25 +73,30 @@ public class CellGrid : MonoBehaviour
         }
     }    
 
-    public void AppropriateEnclosedFreeCellsFrom(Cell cell)
-    {        
-        Queue<Cell> queue = new Queue<Cell>();
-        queue.Enqueue(cell);        
+    //public IEnumerator AppropriateEnclosedFreeCellsFrom(Cell cell)
+    //{        
+    //    WaitForSeconds wait = new WaitForSeconds(1 / _appropriationSpeed);
+    //    Queue<Cell> queue = new Queue<Cell>();
+    //    cell.SetState(CellState.Owned);
+    //    queue.Enqueue(cell);        
 
-        while (queue.Count > 0)
-        {
-            Cell currentCell = queue.Dequeue();
-            currentCell.SetState(CellState.Owned);            
+    //    while (queue.Count > 0)
+    //    {
+    //        Cell currentCell = queue.Dequeue();            
 
-            foreach (var nextCell in GetNearestCellsFrom(currentCell))
-            {
-                if (nextCell.State == CellState.Free)
-                    queue.Enqueue(nextCell);
-            }
-        }        
-    }    
+    //        foreach (var nextCell in GetNearestCellsFrom(currentCell))
+    //        {
+    //            if (nextCell.State == CellState.Free)
+    //            {                    
+    //                yield return wait;
+    //                nextCell.SetState(CellState.Owned);
+    //                queue.Enqueue(nextCell);
+    //            }
+    //        }
+    //    }        
+    //}    
 
-    private Cell[] GetNearestCellsFrom(Cell cell)
+    public Cell[] GetNearestCellsFrom(Cell cell)
     {
         Cell[] nearestCells = new Cell[4];
         nearestCells[0] = _cells[cell.X + 1, cell.Z];

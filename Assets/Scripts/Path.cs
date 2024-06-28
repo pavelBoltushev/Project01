@@ -2,16 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Player))]
 public class Path : MonoBehaviour
 {
-    [SerializeField] private CellGrid _grid;
+    [SerializeField] private float _pathAppropriationSpeed;
+    [SerializeField] private float _cellsAppropriationSpeed;
 
-    private List<(Cell cell, LocalDirection direction)> _cells;
-    private int _pathTurn;    
+    private CellGrid _grid;
+    private List<(Cell cell, RelativeDirection direction)> _cells;
+    private int _pathTurn;
+
+    public bool AppropriationInProgress { get; private set; }
+
+    public int Count => _cells.Count;
 
     private void Awake()
     {
-        _cells = new List<(Cell, LocalDirection)>();
+        _grid = GetComponent<Player>().GetCellGrid();
+        _cells = new List<(Cell, RelativeDirection)>();
         _pathTurn = 0;
     }    
 
@@ -21,32 +29,41 @@ public class Path : MonoBehaviour
 
         if (_cells.Count < 2)
         {
-            _cells.Add((cell, LocalDirection.Forward));
+            _cells.Add((cell, RelativeDirection.Forward));
             return;
         }
 
-        LocalDirection direction = GetLocalDirection(cell, _cells[_cells.Count - 1].cell, _cells[_cells.Count - 2].cell);
+        RelativeDirection direction = GetLocalDirection(cell, _cells[_cells.Count - 1].cell, _cells[_cells.Count - 2].cell);
         _pathTurn += (int)direction;
         _cells.Add((cell, direction));        
     }
 
-    public void Appropriate()
-    {
-        if(_cells.Count != 0)
+    public IEnumerator Appropriate()
+    {       
+        WaitForSeconds wait = new WaitForSeconds(1 / _pathAppropriationSpeed);
+        List<Cell> currentCellsList = new List<Cell>();
+
+        foreach (var cell in _cells)
         {
-            Cell insideFreeCell = GetInsideFreeCell();
+            currentCellsList.Add(cell.cell);
+        }
 
-            if (insideFreeCell != null)
-                _grid.AppropriateEnclosedFreeCellsFrom(insideFreeCell);
+        _cells.Clear();
 
-            foreach (var cell in _cells)
-            {
-                cell.cell.SetState(CellState.Owned);
-            }
+        currentCellsList[0].SetState(CellState.Owned);
 
-            _cells.Clear();
-            _pathTurn = 0;
-        }        
+        for (int i = 1; i < currentCellsList.Count; i++)
+        {
+            yield return wait;
+            Cell insideCell = GetInsideCellFrom(currentCellsList[i], currentCellsList[i - 1]);
+
+            if (insideCell != null && insideCell.State == CellState.Free)
+                StartCoroutine(insideCell.LaunchAppropriation(_cellsAppropriationSpeed));
+
+            currentCellsList[i].SetState(CellState.Owned);                
+        }
+        
+        _pathTurn = 0;        
     }
 
     public void CutTo(Cell cell)
@@ -57,49 +74,36 @@ public class Path : MonoBehaviour
             _cells[_cells.Count - 1].cell.SetState(CellState.Free);
             _cells.RemoveAt(_cells.Count - 1);
         }
-    }
-
-    private Cell GetInsideFreeCell()
-    {
-        for (int i = 1; i < _cells.Count; i++)
-        {
-            Cell insideCell = GetInsideCellFrom(_cells[i].cell, _cells[i - 1].cell);
-
-            if (insideCell != null && insideCell.State == CellState.Free)
-                return insideCell;
-        }
-
-        return null;
-    }
+    }    
 
     private Cell GetInsideCellFrom(Cell currentCell, Cell previousCell)
     {
-        GlobalDirection direction = GetGlobalDirection(currentCell, previousCell);
+        AbsoluteDirection direction = GetGlobalDirection(currentCell, previousCell);
 
         switch (direction)
         {
-            case GlobalDirection.ZPlus:
+            case AbsoluteDirection.ZPlus:
                 if (_pathTurn > 0)
                     return _grid.GetCell(previousCell.X + 1, previousCell.Z);
                 if (_pathTurn < 0)
                     return _grid.GetCell(previousCell.X - 1, previousCell.Z);
                 break;
 
-            case GlobalDirection.ZMinus:
+            case AbsoluteDirection.ZMinus:
                 if (_pathTurn > 0)
                     return _grid.GetCell(previousCell.X - 1, previousCell.Z);
                 if (_pathTurn < 0)
                     return _grid.GetCell(previousCell.X + 1, previousCell.Z);
                 break;
 
-            case GlobalDirection.XPlus:
+            case AbsoluteDirection.XPlus:
                 if (_pathTurn > 0)
                     return _grid.GetCell(previousCell.X, previousCell.Z - 1);
                 if (_pathTurn < 0)
                     return _grid.GetCell(previousCell.X, previousCell.Z + 1);
                 break;
 
-            case GlobalDirection.XMinus:
+            case AbsoluteDirection.XMinus:
                 if (_pathTurn > 0)
                     return _grid.GetCell(previousCell.X, previousCell.Z + 1);
                 if (_pathTurn < 0)
@@ -110,74 +114,74 @@ public class Path : MonoBehaviour
         return null;
     }
 
-    private LocalDirection GetLocalDirection(Cell currentCell, Cell previousCell, Cell prevpreviousCell)
+    private RelativeDirection GetLocalDirection(Cell currentCell, Cell previousCell, Cell prevpreviousCell)
     {
-        GlobalDirection currentGlobalDirection = GetGlobalDirection(currentCell, previousCell);
-        GlobalDirection previousGlobalDirection = GetGlobalDirection(previousCell, prevpreviousCell);
+        AbsoluteDirection currentGlobalDirection = GetGlobalDirection(currentCell, previousCell);
+        AbsoluteDirection previousGlobalDirection = GetGlobalDirection(previousCell, prevpreviousCell);
 
-        if (previousGlobalDirection == GlobalDirection.ZPlus)
+        if (previousGlobalDirection == AbsoluteDirection.ZPlus)
         {
-            if (currentGlobalDirection == GlobalDirection.XPlus)
-                return LocalDirection.Right;
+            if (currentGlobalDirection == AbsoluteDirection.XPlus)
+                return RelativeDirection.Right;
 
-            if (currentGlobalDirection == GlobalDirection.XMinus)
-                return LocalDirection.Left;
+            if (currentGlobalDirection == AbsoluteDirection.XMinus)
+                return RelativeDirection.Left;
         }
 
-        if (previousGlobalDirection == GlobalDirection.ZMinus)
+        if (previousGlobalDirection == AbsoluteDirection.ZMinus)
         {
-            if (currentGlobalDirection == GlobalDirection.XPlus)
-                return LocalDirection.Left;
+            if (currentGlobalDirection == AbsoluteDirection.XPlus)
+                return RelativeDirection.Left;
 
-            if (currentGlobalDirection == GlobalDirection.XMinus)
-                return LocalDirection.Right;
+            if (currentGlobalDirection == AbsoluteDirection.XMinus)
+                return RelativeDirection.Right;
         }
 
-        if (previousGlobalDirection == GlobalDirection.XMinus)
+        if (previousGlobalDirection == AbsoluteDirection.XMinus)
         {
-            if (currentGlobalDirection == GlobalDirection.ZPlus)
-                return LocalDirection.Right;
+            if (currentGlobalDirection == AbsoluteDirection.ZPlus)
+                return RelativeDirection.Right;
 
-            if (currentGlobalDirection == GlobalDirection.ZMinus)
-                return LocalDirection.Left;
+            if (currentGlobalDirection == AbsoluteDirection.ZMinus)
+                return RelativeDirection.Left;
         }
 
-        if (previousGlobalDirection == GlobalDirection.XPlus)
+        if (previousGlobalDirection == AbsoluteDirection.XPlus)
         {
-            if (currentGlobalDirection == GlobalDirection.ZPlus)
-                return LocalDirection.Left;
+            if (currentGlobalDirection == AbsoluteDirection.ZPlus)
+                return RelativeDirection.Left;
 
-            if (currentGlobalDirection == GlobalDirection.ZMinus)
-                return LocalDirection.Right;
+            if (currentGlobalDirection == AbsoluteDirection.ZMinus)
+                return RelativeDirection.Right;
         }
 
-        return LocalDirection.Forward;
+        return RelativeDirection.Forward;
     }
 
-    private GlobalDirection GetGlobalDirection(Cell currentCell, Cell previousCell)
+    private AbsoluteDirection GetGlobalDirection(Cell currentCell, Cell previousCell)
     {
         if (currentCell.Z > previousCell.Z)
-            return GlobalDirection.ZPlus;
+            return AbsoluteDirection.ZPlus;
         else if (currentCell.Z < previousCell.Z)
-            return GlobalDirection.ZMinus;
+            return AbsoluteDirection.ZMinus;
         else if (currentCell.X > previousCell.X)
-            return GlobalDirection.XPlus;
+            return AbsoluteDirection.XPlus;
         else
-            return GlobalDirection.XMinus;
+            return AbsoluteDirection.XMinus;
     }
+}
 
-    private enum LocalDirection
-    {
-        Left = -1,
-        Forward = 0,
-        Right = 1
-    }
+public enum RelativeDirection
+{
+    Left = -1,
+    Forward = 0,
+    Right = 1
+}
 
-    private enum GlobalDirection
-    {
-        ZPlus,
-        ZMinus,
-        XPlus,
-        XMinus
-    }
+public enum AbsoluteDirection
+{
+    ZPlus,
+    ZMinus,
+    XPlus,
+    XMinus
 }

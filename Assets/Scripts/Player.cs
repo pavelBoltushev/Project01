@@ -1,29 +1,21 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController), typeof(Path))]
+[RequireComponent(typeof(Path), typeof(PlayerMover), typeof(PlayerInput))]
 public class Player : MonoBehaviour
-{
-    [SerializeField] private float _speed;
+{    
     [SerializeField] private CellGrid _grid;
     [SerializeField] private int _initialTerritoryRadius;
 
-    private CharacterController _characterController;    
-    private Path _path;    
+    private Path _path;
+    private PlayerMover _mover;
     private bool _hasInitialTerritory;    
 
     private void Awake()
     {
-        _characterController = GetComponent<CharacterController>();
         _path = GetComponent<Path>();
+        _mover = GetComponent<PlayerMover>();
         _hasInitialTerritory = false;
-    }
-
-    private void Update()
-    {
-        Vector3 playerInput = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-
-        _characterController.SimpleMove(playerInput * _speed);
-    }
+    }    
 
     public void OnTouched(Cell cell)
     {
@@ -43,11 +35,17 @@ public class Player : MonoBehaviour
         }
     }
 
+    public CellGrid GetCellGrid()
+    {
+        return _grid;
+    }
+
     private void OnTouchedFree(Cell cell)
     {
         if (_hasInitialTerritory == false)
         {
             _grid.AppropriateInitialTerritoryFrom(cell, _initialTerritoryRadius);
+            _mover.SetCurrent(cell);
             _hasInitialTerritory = true;
             return;
         }
@@ -62,6 +60,7 @@ public class Player : MonoBehaviour
 
     private void OnTouchedOwned(Cell cell)
     {
-        _path.Appropriate();
+        if (_path.Count != 0)
+           StartCoroutine(_path.Appropriate());
     }           
 }
